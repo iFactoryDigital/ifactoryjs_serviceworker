@@ -15,18 +15,17 @@ const browserify = require('browserify');
  * @task serviceworker
  */
 class ServiceworkerTask {
-
   /**
    * Construct serviceworker task class
    *
    * @param {edenGulp} runner
    */
-  constructor (runner) {
+  constructor(runner) {
     // Set private variables
     this._runner = runner;
 
     // Bind methods
-    this.run   = this.run.bind(this);
+    this.run = this.run.bind(this);
     this.watch = this.watch.bind(this);
   }
 
@@ -37,32 +36,31 @@ class ServiceworkerTask {
    *
    * @return {Promise}
    */
-  run (files) {
+  run(files) {
     // Create javascript array
-    let entries = glob.sync(files);
+    const entries = glob.sync(files);
 
     // Browserfiy javascript
     return browserify({
-      'entries' : entries,
-      'paths'   : [
-        './',
-        './app/bundles',
-        './lib/bundles',
-        './node_modules'
-      ]
+      entries,
+      paths   : [
+        global.appRoot,
+        `${global.appRoot}/bundles`,
+        `${global.edenRoot}/node_modules`,
+      ],
     })
       .transform(babelify)
       .bundle()
       .pipe(source('sw.js'))
       .pipe(buffer())
       .pipe(sourcemaps.init({
-        'loadMaps' : true
+        loadMaps : true,
       }))
       .pipe(uglify({
-        'compress' : true
+        compress : true,
       }))
-      .pipe(sourcemaps.write('./www'))
-      .pipe(gulp.dest('./www'));
+      .pipe(sourcemaps.write(`${global.appRoot}/data/www`))
+      .pipe(gulp.dest(`${global.appRoot}/data/www`));
   }
 
   /**
@@ -70,10 +68,10 @@ class ServiceworkerTask {
    *
    * @return {Array}
    */
-  watch () {
+  watch() {
     // Return files
     return [
-      'public/js/serviceworker.js'
+      'public/js/serviceworker.js',
     ];
   }
 }
@@ -83,4 +81,4 @@ class ServiceworkerTask {
  *
  * @type {ServiceworkerTask}
  */
-exports = module.exports = ServiceworkerTask;
+module.exports = ServiceworkerTask;

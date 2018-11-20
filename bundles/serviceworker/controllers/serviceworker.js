@@ -7,15 +7,6 @@ const Controller = require('controller');
  */
 class ServiceworkerController extends Controller {
 
-  /**
-   * Construct Home Controller class
-   */
-  constructor () {
-    // Run super
-    super();
-    
-  }
-
 }
 
 /**
@@ -23,4 +14,4 @@ class ServiceworkerController extends Controller {
  *
  * @type {ServiceworkerController}
  */
-exports = module.exports = ServiceworkerController;
+module.exports = ServiceworkerController;

@@ -9,16 +9,15 @@ const Events = require('events');
  * @extends events
  */
 class EdenServiceworkerBuilder extends Events {
-
   /**
    * Construct eden worker
    */
-  constructor () {
+  constructor(...args) {
     // Run super
-    super(...arguments);
+    super(...args);
 
     // Bind methods
-    this.can   = this.can.bind(this);
+    this.can = this.can.bind(this);
     this.build = this.build.bind(this);
 
     // Run build method
@@ -28,16 +27,13 @@ class EdenServiceworkerBuilder extends Events {
   /**
    * Builds eden service worker
    */
-  async build () {
+  async build() {
     // Check can
     if (!this.can()) return;
 
-    // Registered successfully
-    console.log('[EdenJS] [ServiceWorker] registering serviceWorker');
-
     // Register serviceworker
     this.registration = await navigator.serviceWorker.register('/sw.js');
-    this.ready        = await navigator.serviceWorker.ready;
+    this.ready = await navigator.serviceWorker.ready;
 
     // Await subscription
     this.subscription = await this.ready.pushManager.getSubscription();
@@ -50,9 +46,6 @@ class EdenServiceworkerBuilder extends Events {
       // On message
       this.emit(event.data.type, ...event.data.args);
     };
-
-    // Registered successfully
-    console.log('[EdenJS] [ServiceWorker] registration successful with scope: ', this.registration.scope);
   }
 
   /**
@@ -63,25 +56,25 @@ class EdenServiceworkerBuilder extends Events {
    *
    * @return {Promise}
    */
-  async call (name, ...args) {
+  async call(name, ...args) {
     // Let id
-    let id = uuid();
+    const id = uuid();
 
     // Create emission
-    let emission = {
-      'id'   : id,
-      'args' : args,
-      'name' : name
+    const emission = {
+      id,
+      args,
+      name,
     };
 
     // Await one response
-    let result = new Promise((resolve) => {
+    const result = new Promise((resolve) => {
       // On message
       this.once(id, resolve);
     });
 
     // Emit to socket
-    this.send('serviceworker.call.' + name, emission);
+    this.send(`serviceworker.call.${name}`, emission);
 
     // Return result
     return await result;
@@ -93,14 +86,14 @@ class EdenServiceworkerBuilder extends Events {
    * @param  {String} type
    * @param  {Array}  args
    */
-  async send (type, ...args) {
+  async send(type, ...args) {
     // Await building
     await this.building;
 
     // Push to message channel
     this.registration.active.postMessage({
-      'type' : type,
-      'args' : args
+      type,
+      args,
     }, [this.channel.port2]);
   }
 
@@ -109,7 +102,7 @@ class EdenServiceworkerBuilder extends Events {
    *
    * @return {Boolean}
    */
-  can () {
+  can() {
     // Return can
     return !!('serviceWorker' in navigator && navigator.serviceWorker);
   }
@@ -120,4 +113,5 @@ class EdenServiceworkerBuilder extends Events {
  *
  * @type {edenWorker}
  */
-exports = module.exports = window.eden.serviceworker = new EdenServiceworkerBuilder();
+window.eden.serviceworker = new EdenServiceworkerBuilder();
+module.exports = window.eden.serviceworker;

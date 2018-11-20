@@ -8,17 +8,16 @@ const Events = require('events');
  * @extends events
  */
 class EdenServiceworker extends Events {
-
   /**
    * Construct eden
    */
-  constructor () {
+  constructor(...args) {
     // Run super
-    super(...arguments);
+    super(...args);
 
     // Bind methods
-    this.send     = this.send.bind(this);
-    this.build    = this.build.bind(this);
+    this.send = this.send.bind(this);
+    this.build = this.build.bind(this);
     this.endpoint = this.endpoint.bind(this);
 
     // Build this
@@ -28,10 +27,7 @@ class EdenServiceworker extends Events {
   /**
    * Builds eden worker
    */
-  build () {
-    // Registered successfully
-    console.log('[edenWorker] building serviceWorker');
-
+  build() {
     // Emit on message
     self.addEventListener('message', (event) => {
       // On message
@@ -46,14 +42,14 @@ class EdenServiceworker extends Events {
    * @param  {String} type
    * @param  {Array}  args
    */
-  async send (port, type, ...args) {
+  async send(port, type, ...args) {
     // Await building
     await this.building;
 
     // Push to message channel
     port.postMessage({
-      'type' : type,
-      'args' : args
+      type,
+      args,
     });
   }
 
@@ -63,9 +59,9 @@ class EdenServiceworker extends Events {
    * @param  {String}   str
    * @param  {Function} fn
    */
-  endpoint (str, fn) {
+  endpoint(str, fn) {
     // On connect call
-    this.on('serviceworker.call.' + str, async (port, { id, args }) => {
+    this.on(`serviceworker.call.${str}`, async (port, { id, args }) => {
       // Run function
       this.send(port, id, await fn(...args));
     });
