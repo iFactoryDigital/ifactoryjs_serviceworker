@@ -1,7 +1,7 @@
 
 // Require dependencies
 const gulp       = require('gulp');
-const glob       = require('glob-all');
+const glob       = require('globby');
 const buffer     = require('vinyl-buffer');
 const source     = require('vinyl-source-stream');
 const uglify     = require('gulp-uglify-es').default;
