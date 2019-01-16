@@ -1,13 +1,28 @@
 
 // Require dependencies
-const gulp       = require('gulp');
-const glob       = require('globby');
-const buffer     = require('vinyl-buffer');
-const source     = require('vinyl-source-stream');
-const uglify     = require('gulp-uglify-es').default;
-const babelify   = require('babelify');
-const sourcemaps = require('gulp-sourcemaps');
-const browserify = require('browserify');
+const config         = require('config');
+const gulp           = require('gulp');
+const glob           = require('@edenjs/glob');
+const babel          = require('@babel/core');
+const vinylBuffer    = require('vinyl-buffer');
+const vinylSource    = require('vinyl-source-stream');
+const gulpTerser     = require('gulp-terser');
+const babelify       = require('babelify');
+const watchify       = require('watchify');
+const gulpSourcemaps = require('gulp-sourcemaps');
+const browserify     = require('browserify');
+
+// Globally require babel plugins (i wish eslint would thank me too)
+const babelPresets = {
+  presetEnv : require('@babel/preset-env'), // eslint-disable-line global-require
+};
+
+const babelPlugins = {
+  pollyfill        : require('@babel/polyfill'), // eslint-disable-line global-require
+  transformClasses : require('@babel/plugin-transform-classes'), // eslint-disable-line global-require
+  transformAsync   : require('@babel/plugin-transform-async-to-generator'), // eslint-disable-line global-require
+  transformRuntime : require('@babel/plugin-transform-runtime'), // eslint-disable-line global-require
+};
 
 /**
  * Build serviceworker task class
@@ -29,6 +44,62 @@ class ServiceworkerTask {
     this.watch = this.watch.bind(this);
   }
 
+  async _browserify(files) {
+    if (this._b !== null) {
+      return this._b;
+    }
+
+    // Create javascript array
+    const entries = await glob(files);
+
+    // Browserify javascript
+    let b = browserify({
+      entries,
+      paths   : [
+        global.appRoot,
+        `${global.appRoot}/bundles`,
+        `${global.edenRoot}/node_modules`,
+      ],
+      commondir     : false,
+    });
+
+    b = b.transform(babelify, {
+      sourceMaps : config.get('environment') === 'dev' && !config.get('noSourcemaps'),
+      presets    : [
+        babel.createConfigItem([babelPresets.presetEnv, {
+          useBuiltIns : 'entry',
+          targets     : {
+            chrome         : '71',
+            edge           : '18',
+            firefox        : '64',
+            safari         : '12',
+            opera          : '57',
+            ios            : '12.1',
+            chromeandroid  : '70',
+            firefoxandroid : '63',
+            samsung        : '7.2',
+            ucandroid      : '11.8',
+          },
+        }]),
+      ],
+      plugins : [
+        babel.createConfigItem(babelPlugins.pollyfill),
+        babel.createConfigItem(babelPlugins.transformClasses),
+        babel.createConfigItem(babelPlugins.transformAsync),
+        babel.createConfigItem([babelPlugins.transformRuntime, {
+          helpers      : false,
+          regenerators : true,
+        }]),
+      ],
+    });
+
+    b = watchify(b);
+
+    this._b = b;
+
+    return b;
+  }
+
   /**
    * Run assets task
    *
@@ -36,31 +107,46 @@ class ServiceworkerTask {
    *
    * @return {Promise}
    */
-  run(files) {
-    // Create javascript array
-    const entries = glob.sync(files);
+  async run(files) {
+    const b = await this._browserify(files);
 
-    // Browserfiy javascript
-    return browserify({
-      entries,
-      paths   : [
-        global.appRoot,
-        `${global.appRoot}/bundles`,
-        `${global.edenRoot}/node_modules`,
-      ],
-    })
-      .transform(babelify)
+    // Create job from browserify
+    let job = b
       .bundle()
-      .pipe(source('sw.js'))
-      .pipe(buffer())
-      .pipe(sourcemaps.init({
-        loadMaps : true,
-      }))
-      .pipe(uglify({
+      .pipe(vinylSource('sw.js')) // Convert to gulp stream
+      .pipe(vinylBuffer()); // Needed for terser, sourcemaps
+
+    // Init gulpSourcemaps
+    if (config.get('environment') === 'dev' && !config.get('noSourcemaps')) {
+      job = job.pipe(gulpSourcemaps.init({ loadMaps : true }));
+    }
+
+    // Only minify in live
+    if (config.get('environment') === 'live') {
+      // Pipe uglify
+      job = job.pipe(gulpTerser({
+        ie8    : false,
+        mangle : true,
+        output : {
+          comments : false,
+        },
         compress : true,
-      }))
-      .pipe(sourcemaps.write(`${global.appRoot}/data/www`))
-      .pipe(gulp.dest(`${global.appRoot}/data/www`));
+      }));
+    }
+
+    // Write gulpSourcemaps
+    if (config.get('environment') === 'dev' && !config.get('noSourcemaps')) {
+      job = job.pipe(gulpSourcemaps.write('.'));
+    }
+
+    // Pipe job
+    job = job.pipe(gulp.dest(`${global.appRoot}/data/www`));
+
+    // Wait for job to end
+    await new Promise((resolve, reject) => {
+      job.once('end', resolve);
+      job.once('error', reject);
+    });
   }
 
   /**

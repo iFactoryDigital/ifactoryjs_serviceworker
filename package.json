@@ -1,6 +1,6 @@
 {
   "name": "@edenjs/serviceworker",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/eden-js/serviceworker#readme",
   "dependencies": {
+    "@edenjs/glob": "^1.0.0",
     "babelify": "^10.0.0",
     "browserify": "^16.2.3",
-    "globby": "^8.0.1",
     "gulp": "^4.0.0",
     "gulp-sourcemaps": "^2.6.4",
     "gulp-uglify-es": "^1.0.4",
