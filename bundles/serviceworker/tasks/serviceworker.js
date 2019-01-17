@@ -38,6 +38,7 @@ class ServiceworkerTask {
   constructor(runner) {
     // Set private variables
     this._runner = runner;
+    this._b = null;
 
     // Bind methods
     this.run = this.run.bind(this);
