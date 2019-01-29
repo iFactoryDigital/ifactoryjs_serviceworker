@@ -42,7 +42,7 @@ class ServiceworkerTask {
     // Browserify javascript
     let b = browserify({
       paths         : global.importLocations,
-      entries       : await glob(files),
+      entries       : [require.resolve('@babel/polyfill'), ...await glob(files)],
       debug         : config.get('environment') === 'dev' && !config.get('noSourcemaps'),
       commondir     : false,
       insertGlobals : true,
@@ -54,7 +54,7 @@ class ServiceworkerTask {
       sourceMaps : config.get('environment') === 'dev' && !config.get('noSourcemaps'),
       presets    : [
         babel.createConfigItem([babelPresetEnv, {
-          useBuiltIns : 'usage',
+          useBuiltIns : 'entry',
           targets     : {
             browsers : config.get('browserlist'),
           },
