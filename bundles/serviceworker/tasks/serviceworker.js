@@ -11,18 +11,7 @@ const babelify       = require('babelify');
 const watchify       = require('watchify');
 const gulpSourcemaps = require('gulp-sourcemaps');
 const browserify     = require('browserify');
-
-// Globally require babel plugins (i wish eslint would thank me too)
-const babelPresets = {
-  presetEnv : require('@babel/preset-env'), // eslint-disable-line global-require
-};
-
-const babelPlugins = {
-  pollyfill        : require('@babel/polyfill'), // eslint-disable-line global-require
-  transformClasses : require('@babel/plugin-transform-classes'), // eslint-disable-line global-require
-  transformAsync   : require('@babel/plugin-transform-async-to-generator'), // eslint-disable-line global-require
-  transformRuntime : require('@babel/plugin-transform-runtime'), // eslint-disable-line global-require
-};
+const babelPresetEnv = require('@babel/preset-env');
 
 /**
  * Build serviceworker task class
@@ -50,51 +39,33 @@ class ServiceworkerTask {
       return this._b;
     }
 
-    // Create javascript array
-    const entries = await glob(files);
-
     // Browserify javascript
     let b = browserify({
-      entries,
-      paths   : [
-        global.appRoot,
-        `${global.appRoot}/bundles`,
-        `${global.edenRoot}/node_modules`,
-      ],
+      paths         : global.importLocations,
+      entries       : await glob(files),
+      debug         : config.get('environment') === 'dev' && !config.get('noSourcemaps'),
       commondir     : false,
+      insertGlobals : true,
+      cache         : {},
+      packageCache  : {},
     });
 
     b = b.transform(babelify, {
       sourceMaps : config.get('environment') === 'dev' && !config.get('noSourcemaps'),
       presets    : [
-        babel.createConfigItem([babelPresets.presetEnv, {
-          useBuiltIns : 'entry',
+        babel.createConfigItem([babelPresetEnv, {
+          useBuiltIns : 'usage',
           targets     : {
-            chrome         : '71',
-            edge           : '18',
-            firefox        : '64',
-            safari         : '12',
-            opera          : '57',
-            ios            : '12.1',
-            chromeandroid  : '70',
-            firefoxandroid : '63',
-            samsung        : '7.2',
-            ucandroid      : '11.8',
+            browsers : config.get('browserlist'),
           },
-        }]),
-      ],
-      plugins : [
-        babel.createConfigItem(babelPlugins.pollyfill),
-        babel.createConfigItem(babelPlugins.transformClasses),
-        babel.createConfigItem(babelPlugins.transformAsync),
-        babel.createConfigItem([babelPlugins.transformRuntime, {
-          helpers      : false,
-          regenerators : true,
         }]),
       ],
     });
 
-    b = watchify(b);
+    b.plugin(watchify, {
+      poll        : false,
+      ignoreWatch : ['*'],
+    });
 
     this._b = b;
 
