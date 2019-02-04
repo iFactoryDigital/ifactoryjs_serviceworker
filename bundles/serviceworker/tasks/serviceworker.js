@@ -17,7 +17,8 @@ const babelPresetEnv = require('@babel/preset-env');
 /**
  * Build serviceworker task class
  *
- * @task serviceworker
+ * @task  serviceworker
+ * @after controllers
  */
 class ServiceworkerTask {
   /**
@@ -81,6 +82,7 @@ class ServiceworkerTask {
    * @return {Promise}
    */
   async run(files) {
+    // browserify files
     const b = await this._browserify(files);
 
     // Create browserify bundle
@@ -96,9 +98,28 @@ class ServiceworkerTask {
       job = job.pipe(gulpSourcemaps.init({ loadMaps : true }));
     }
 
+    // get offline routes
+    const routes = cache('routes').filter((route) => {
+      // return route is offline
+      return !!route.offline;
+    }).map((route) => {
+      // return mapped route
+      return {
+        acl      : route.acl,
+        fail     : route.fail,
+        type     : route.type,
+        view     : route.view,
+        route    : (route.mount + route.route).replace('//', '/'),
+        title    : route.title,
+        layout   : route.layout,
+        priority : route.priority,
+      };
+    }).sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
     // Build vendor prepend
     const head = `
       self.config = ${JSON.stringify(config.get('serviceworker.config') || {})};
+      ${config.get('serviceworker.config.offline') ? `self.config.routes = ${JSON.stringify(routes)};` : ''}
     `;
 
     // Apply head to file

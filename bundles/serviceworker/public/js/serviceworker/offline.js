@@ -1,6 +1,7 @@
 
 // Require events
-const Events = require('events');
+const Events  = require('events');
+const toRegex = require('path-to-regexp');
 
 // Cache polyfil to support cacheAPI in all browsers
 require('./cache-polyfill');
@@ -35,6 +36,18 @@ class EdenOffline extends Events {
     // install offline cache
     this.eden.log('info', 'enabling offline');
 
+    // build routes
+    this._routes = [];
+
+    // loop routes
+    for (const route of self.config.routes) {
+      // test route
+      route.test = toRegex(route.route);
+
+      // push route
+      this._routes.push(route);
+    }
+
     // Adding `install` event listener
     self.addEventListener('install', (event) => {
       // await install
@@ -67,9 +80,10 @@ class EdenOffline extends Events {
   async fetch(event) {
     // get request
     const { request } = event;
+    const path = request.url.split(self.config.domain).pop();
 
     // match cache
-    const response = await caches.match(request);
+    let response = await caches.match(request);
 
     // if response
     if (response) {
@@ -77,7 +91,45 @@ class EdenOffline extends Events {
       return response;
     }
 
-    // fetch request
+    // find offline route
+    const offline = this._routes.find((route) => {
+      // test route
+      return route.test.test(path);
+    });
+
+    // check offline
+    if (offline) {
+      // create offline response
+      response = new Response(JSON.stringify({
+        mount : {
+          url    : path,
+          page   : offline.view,
+          path   : offline.path,
+          layout : `${offline.layout || 'main'}-layout`,
+        },
+        page : {
+          title : offline.title,
+        },
+        state : {
+          offline : true,
+        },
+      }), {
+        headers : {
+          'Content-Type' : 'application/json',
+        },
+      });
+
+      // try/catch around fetch
+      try {
+        // fetch request
+        response = await fetch(request);
+      } catch (e) {}
+
+      // return response
+      return response;
+    }
+
+    // return normal offline
     return fetch(request);
   }
 
