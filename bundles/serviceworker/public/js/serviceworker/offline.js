@@ -85,6 +85,9 @@ class EdenOffline extends Events {
     // match cache
     let response = await caches.match(request);
 
+    // return cached response
+    if (response && request.headers.get('Accept') !== 'application/json' && path.includes('.')) return response;
+
     // check response
     if (!response && path) {
       // find offline route
