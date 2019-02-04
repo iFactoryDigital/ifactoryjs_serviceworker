@@ -80,35 +80,29 @@ class EdenOffline extends Events {
   async fetch(event) {
     // get request
     const { request } = event;
-    const path = request.url.split(self.config.domain).pop();
+    const path = request.url.includes(self.config.domain) ? request.url.split(self.config.domain).pop() : null;
 
     // match cache
     let response = await caches.match(request);
 
-    // if response
-    if (response) {
-      // return cached response
-      return response;
-    }
+    // check response
+    if (!response && path) {
+      // find offline route
+      const offline = this._routes.find((route) => {
+        // test route
+        return route.test.test(path);
+      });
 
-    // find offline route
-    const offline = this._routes.find((route) => {
-      // test route
-      return route.test.test(path);
-    });
-
-    // check offline
-    if (offline) {
       // create offline response
-      response = new Response(JSON.stringify({
+      response = request.headers.get('Accept') === 'application/json' ? new Response(JSON.stringify({
         mount : {
           url    : path,
-          page   : offline.view,
-          path   : offline.path,
-          layout : `${offline.layout || 'main'}-layout`,
+          page   : offline ? offline.view : 'offline-page',
+          path   : offline ? offline.path : path,
+          layout : `${(offline || {}).layout || 'main'}-layout`,
         },
         page : {
-          title : offline.title,
+          title : offline ? offline.title : 'Offline',
         },
         state : {
           offline : true,
@@ -117,20 +111,17 @@ class EdenOffline extends Events {
         headers : {
           'Content-Type' : 'application/json',
         },
-      });
-
-      // try/catch around fetch
-      try {
-        // fetch request
-        response = await fetch(request);
-      } catch (e) {}
-
-      // return response
-      return response;
+      }) : caches.match('/offline');
     }
 
-    // return normal offline
-    return fetch(request);
+    // try/catch around fetch
+    try {
+      // fetch request
+      response = await fetch(request);
+    } catch (e) {}
+
+    // return response
+    return response;
   }
 
   /**
@@ -148,6 +139,7 @@ class EdenOffline extends Events {
 
     // unshift files
     files.unshift('/');
+    files.unshift('/offline');
     files.unshift(`/public/js/app.min.js?v=${self.config.version}`);
     files.unshift(`/public/css/app.min.css?v=${self.config.version}`);
 
