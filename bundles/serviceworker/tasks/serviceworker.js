@@ -1,16 +1,17 @@
 
 // Require dependencies
-const config         = require('config');
 const gulp           = require('gulp');
 const glob           = require('@edenjs/glob');
 const babel          = require('@babel/core');
-const vinylBuffer    = require('vinyl-buffer');
-const vinylSource    = require('vinyl-source-stream');
-const gulpTerser     = require('gulp-terser');
+const config         = require('config');
 const babelify       = require('babelify');
 const watchify       = require('watchify');
-const gulpSourcemaps = require('gulp-sourcemaps');
 const browserify     = require('browserify');
+const gulpTerser     = require('gulp-terser');
+const gulpHeader     = require('gulp-header');
+const vinylBuffer    = require('vinyl-buffer');
+const vinylSource    = require('vinyl-source-stream');
+const gulpSourcemaps = require('gulp-sourcemaps');
 const babelPresetEnv = require('@babel/preset-env');
 
 /**
@@ -42,8 +43,8 @@ class ServiceworkerTask {
     // Browserify javascript
     let b = browserify({
       paths         : global.importLocations,
-      entries       : [require.resolve('@babel/polyfill'), ...await glob(files)],
       debug         : config.get('environment') === 'dev' && !config.get('noSourcemaps'),
+      entries       : [require.resolve('@babel/polyfill'), ...await glob(files)],
       commondir     : false,
       insertGlobals : true,
       cache         : {},
@@ -82,9 +83,11 @@ class ServiceworkerTask {
   async run(files) {
     const b = await this._browserify(files);
 
-    // Create job from browserify
-    let job = b
-      .bundle()
+    // Create browserify bundle
+    const bundle = b.bundle();
+
+    // Create job from browserify bundle
+    let job = bundle
       .pipe(vinylSource('sw.js')) // Convert to gulp stream
       .pipe(vinylBuffer()); // Needed for terser, sourcemaps
 
@@ -92,6 +95,14 @@ class ServiceworkerTask {
     if (config.get('environment') === 'dev' && !config.get('noSourcemaps')) {
       job = job.pipe(gulpSourcemaps.init({ loadMaps : true }));
     }
+
+    // Build vendor prepend
+    const head = `
+      self.config = ${JSON.stringify(config.get('serviceworker.config') || {})};
+    `;
+
+    // Apply head to file
+    job = job.pipe(gulpHeader(head, false));
 
     // Only minify in live
     if (config.get('environment') === 'live') {
@@ -118,6 +129,7 @@ class ServiceworkerTask {
     await new Promise((resolve, reject) => {
       job.once('end', resolve);
       job.once('error', reject);
+      bundle.once('error', reject);
     });
   }
 
@@ -130,6 +142,7 @@ class ServiceworkerTask {
     // Return files
     return [
       'public/js/serviceworker.js',
+      'public/js/serviceworker/**/*',
     ];
   }
 }

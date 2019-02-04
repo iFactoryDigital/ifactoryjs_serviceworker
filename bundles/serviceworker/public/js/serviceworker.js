@@ -2,6 +2,9 @@
 // Require events
 const Events = require('events');
 
+// Require local dependencies
+const EdenOffline = require('serviceworker/public/js/serviceworker/offline');
+
 /**
  * Build edenWorker eden
  *
@@ -33,6 +36,25 @@ class EdenServiceworker extends Events {
       // On message
       this.emit(event.data.type, event.ports[0], ...event.data.args);
     });
+
+    // require offline
+    if (self.config.offline) {
+      // require offline
+      this.offline = new EdenOffline(this);
+    }
+  }
+
+  /**
+   * log message
+   *
+   * @param  {String} type
+   * @param  {String} message
+   *
+   * @return {*}
+   */
+  log(type, message) {
+    // logs serviceworker message
+    console.log(`[${type}] [serviceworker] ${message}`);
   }
 
   /**
@@ -46,11 +68,26 @@ class EdenServiceworker extends Events {
     // Await building
     await this.building;
 
-    // Push to message channel
-    port.postMessage({
-      type,
-      args,
-    });
+    // check port
+    if (!port) {
+      // get all clients
+      const all = await self.clients.matchAll();
+
+      // loop all
+      all.forEach((p) => {
+        // Push to message channel
+        p.postMessage({
+          type,
+          args,
+        });
+      });
+    } else {
+      // Push to message channel
+      port.postMessage({
+        type,
+        args,
+      });
+    }
   }
 
   /**
