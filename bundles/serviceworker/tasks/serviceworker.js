@@ -17,7 +17,7 @@ const babelPresetEnv = require('@babel/preset-env');
 /**
  * Build serviceworker task class
  *
- * @task  serviceworker
+ * @task serviceworker
  */
 class ServiceworkerTask {
   /**
