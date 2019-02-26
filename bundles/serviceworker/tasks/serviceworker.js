@@ -18,7 +18,6 @@ const babelPresetEnv = require('@babel/preset-env');
  * Build serviceworker task class
  *
  * @task  serviceworker
- * @after controllers
  */
 class ServiceworkerTask {
   /**
@@ -109,7 +108,7 @@ class ServiceworkerTask {
         fail     : route.fail,
         type     : route.type,
         view     : route.view,
-        route    : (route.mount + route.route).replace('//', '/'),
+        route    : route.path,
         title    : route.title,
         layout   : route.layout,
         priority : route.priority,
