@@ -1,0 +1,21 @@
+language: node_js
+node_js:
+- '10'
+sudo: false
+install:
+- npm install --only=dev
+- npm ci
+before_script:
+- node node_modules/eslint/bin/eslint.js .
+script:
+- node ./edenconfig.js
+after_script:
+- npm test
+deploy:
+  provider: npm
+  email: alex@edenup.com
+  api_key:
+    secure: FZYAdX9/wGkrCxFDtq0o6CQtZkMRTNgy3g+hxU3nqSNp9VEXb4FvegEbW26PWwol4dxK+4Xen1v2gmxoSIrIBHlo0wzmh1S1KSP9C686StjTJp5lWWl6h8JnsAmJEFNKQ7UspDLXJeihfjNSPD5zS36bR933Xx4E5RwIGzL50FZUS88F4HpbhKAl2pAUcil7xNGeg9gHkoSPgiDbxcEgmvuHcvt175iBcT4DZgc5ln2HA/Bqz2TeYlmhRdf0ZEpEmSbtzErmR3lkGUFO3YRzZGrkxweVLunv0jNUs4rQDymzuTJVc40LMPkviglbYjnZXkudWLp+oUBg4MV1hNAIOeDxvhwwxsMwvLkqHu3o8/gOmkl3WP9FGQzuvQ67lPQ50158YLKNoj4xPDv+2kmmrUnl5oHjmAFVa0/m3j5b1TrWE9IUBgs3uABuayRrUKjA8FSIc8jv+gs3Jzo7yFwBAzSEF5An+NlcG+y5nDT7sMe+HBTwkSp0eXblp5jdOaqbCi/5LHpJC+bTsOUWgZUx1erz+8JrGl0UqA6OtmoT2ySlF7gjvRsTfAaGlUYtY1JvobVR5mh/SW2O6fpz9koMoaQN72T4ysZMk6cCM9zDH7Sc5TcJdkwNZMZqWWEu7Qkw5CpA7jADO50ygA4mW4+DGY6PjANT0yqUc6CXYqe5cOg=
+  on:
+    tags: true
+    repo: eden-js/serviceworker
