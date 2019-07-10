@@ -1,4 +1,4 @@
-const config = {}
+const config = {};
 
 config.serviceworker = {
   enable : true,

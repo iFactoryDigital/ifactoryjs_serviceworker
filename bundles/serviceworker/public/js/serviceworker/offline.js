@@ -1,3 +1,5 @@
+/* eslint-disable no-empty */
+/* eslint-disable no-restricted-globals */
 
 // Require events
 const Events  = require('events');
@@ -80,6 +82,7 @@ class EdenOffline extends Events {
   async fetch(event) {
     // get request
     const { request } = event;
+    // eslint-disable-next-line max-len
     const path = request.url.includes(self.config.domain) ? request.url.split(self.config.domain).pop() : null;
 
     // match cache
@@ -132,7 +135,7 @@ class EdenOffline extends Events {
    *
    * @param  {Event} event
    */
-  async install(event) {
+  async install() {
     // install offline cache
     this.eden.log('info', 'installing offline cache');
 
@@ -163,7 +166,7 @@ class EdenOffline extends Events {
    *
    * @return {Promise}
    */
-  async activate(event) {
+  async activate() {
     // install offline cache
     this.eden.log('info', 'removing depricated offline cache');
 

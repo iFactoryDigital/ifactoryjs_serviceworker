@@ -32,12 +32,14 @@ class EdenServiceworker extends Events {
    */
   build() {
     // Emit on message
+    // eslint-disable-next-line no-restricted-globals
     self.addEventListener('message', (event) => {
       // On message
       this.emit(event.data.type, event.ports[0], ...event.data.args);
     });
 
     // require offline
+    // eslint-disable-next-line no-restricted-globals
     if (self.config.offline) {
       // require offline
       this.offline = new EdenOffline(this);
@@ -54,6 +56,7 @@ class EdenServiceworker extends Events {
    */
   log(type, message) {
     // logs serviceworker message
+    // eslint-disable-next-line no-console
     console.log(`[${type}] [serviceworker] ${message}`);
   }
 
@@ -71,6 +74,7 @@ class EdenServiceworker extends Events {
     // check port
     if (!port) {
       // get all clients
+      // eslint-disable-next-line no-restricted-globals
       const all = await self.clients.matchAll();
 
       // loop all
@@ -110,4 +114,5 @@ class EdenServiceworker extends Events {
  *
  * @type {edenWorker}
  */
+// eslint-disable-next-line no-restricted-globals
 self.eden = new EdenServiceworker();

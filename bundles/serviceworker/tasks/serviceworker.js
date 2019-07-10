@@ -113,7 +113,7 @@ class ServiceworkerTask {
         layout   : route.layout,
         priority : route.priority,
       };
-    }).sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    }).sort((a, bb) => (bb.priority || 0) - (a.priority || 0));
 
     // Build vendor prepend
     const head = `

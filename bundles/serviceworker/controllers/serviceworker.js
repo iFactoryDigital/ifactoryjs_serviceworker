@@ -40,4 +40,4 @@ class ServiceworkerController extends Controller {
  *
  * @type {ServiceworkerController}
  */
-exports = module.exports = ServiceworkerController;
+module.exports = ServiceworkerController;
