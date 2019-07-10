@@ -49,7 +49,8 @@ async indexAction(req, res) {
 }
 ```
 
-As we cannot run a function in the backend when the service has no internet, all other features need to be specified in the config rather than the action function, eg the following will not function in offline mode, while the above will.
+As we cannot run a function in the backend when the service has no internet, all other features need to be specified in the config rather than the action function.
+For example, the following will not function in offline mode; while the above will.
 
 ```js
 /**
